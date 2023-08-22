@@ -6,6 +6,7 @@ import shift_register_driver as sr_driver
 import app_logger
 import nixie_mask
 
+DIGIT_VALUE_OFF=255
 __MAX_DIGIT_VALUE=9
 __log = app_logger.get_logger(__name__)
 
@@ -20,7 +21,7 @@ class NixieDisplay:
     def set_digit(self, pos: int, value: int):
         if pos > self.num_digits:
             raise ValueError(f"Position not valid, {pos} > {self.num_digits}")
-        if value > __MAX_DIGIT_VALUE:
+        if (value > __MAX_DIGIT_VALUE) and (value != DIGIT_VALUE_OFF):
             raise ValueError(f"Value not valid, {value} > {__MAX_DIGIT_VALUE}")
         self.digit_values[pos] = value
         __log.debug(self.digit_values)
@@ -35,8 +36,11 @@ class NixieDisplay:
         # Create empty frame
         sr_data = bytearray(nixie_mask.get_total_bytes())
         for digit_pos in range(0, self.num_digits):
-            byte_mask = nixie_mask.get_digit_mask(digit_pos, self.digit_values[digit_pos])
-            byte_pos = nixie_mask.get_digit_byte(digit_pos, self.digit_values[digit_pos])
+            byte_mask = 0
+            byte_pos = 0
+            if self.digit_values[digit_pos] != DIGIT_VALUE_OFF:
+                byte_mask = nixie_mask.get_digit_mask(digit_pos, self.digit_values[digit_pos])
+                byte_pos = nixie_mask.get_digit_byte(digit_pos, self.digit_values[digit_pos])
             sr_data[byte_pos] |= byte_mask
             __log.debug(f"digit: {digit_pos}({self.digit_values[digit_pos]}), byte {byte_pos}, mask x{byte_mask:02x}")
         for dp_pos in range(0, self.num_dp):

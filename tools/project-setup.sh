@@ -17,6 +17,7 @@ psources=(
     "lib/app_logger.py"
     "lib/fsm.py"
     "lib/nixie_driver.py"
+    "lib/nixie_handler.py"
     "lib/nixie_mask.py"
     "lib/ps_driver.py"
     "lib/shift_register_driver.py"

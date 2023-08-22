@@ -80,13 +80,4 @@ def set_frame_rate(frame_rate: int):
     __frame_rate = frame_rate / 1000
 
 
-# Module test
-def test():
-    nix = nixie_driver.NixieDisplay()
-    set_value(nix, 0, 0, 0)
-    for test_digit in range(100):
-        scroll_to_value(nix, test_digit, test_digit, test_digit)
-        time.sleep(0.5)
-
-
 # EOF

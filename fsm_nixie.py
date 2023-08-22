@@ -11,6 +11,8 @@ import wifi_handler
 import sync_handler
 import cli_handler
 import nixie_driver
+
+import nixie_handler
 import ps_driver
 
 # System states
@@ -53,6 +55,9 @@ __event_to_name = {
 
 # Internal vars ---------------------------------------------------------------
 
+DATE_SECOND = 40
+DATE_SHOW_TIME = 5
+
 SYNC_HOUR = 3
 SYNC_MIN = 0
 SYNC_SEC = 0
@@ -76,19 +81,19 @@ ps = ps_driver.PoweSupply(PIN_EN_PS)
 
 # Private functions -----------------------------------------------------------
 
-def set_time_nixie(hour, min, sec):
+def set_value_nixie(a, b, c, scroll=False, toggle_dp=False):
+    if scroll:
+        nixie_handler.scroll_to_value(nix, a, b, c)
+    else:
+        nixie_handler.set_value(nix, a, b, c)
+    if toggle_dp:
+        toggle_dp_value()
+
+def toggle_dp_value():
     global dp_state
     global nix
-    nix.set_digit(0, int(sec%10))
-    nix.set_digit(1, int(sec/10))
-    nix.set_digit(2, int(min%10))
-    nix.set_digit(3, int(min/10))
-    nix.set_digit(4, int(hour%10))
-    nix.set_digit(5, int(hour/10))
     dp_state = not dp_state
-    nix.set_dp(0, dp_state)
-    nix.set_dp(1, dp_state)
-    nix.update()
+    nixie_handler.set_dp(nix, dp_state)
 
 def init_hardware():
     global dp_state
@@ -98,15 +103,9 @@ def init_hardware():
     # enable power supply
     ps.enable()
     # Setup init value on nixie
-    nix.set_digit(0, 0)
-    nix.set_digit(1, 0)
-    nix.set_digit(2, 0)
-    nix.set_digit(3, 0)
-    nix.set_digit(4, 0)
-    nix.set_digit(5, 0)
-    nix.set_dp(0, dp_state)
-    nix.set_dp(1, dp_state)
-    nix.update()
+    nixie_handler.set_value(nix, 0, 0, 0)
+    # Update dp
+    nixie_handler.set_dp(nix, False)
 
 # Handlers for defined states -------------------------------------------------
 
@@ -121,6 +120,7 @@ def __connecting_state_handler():
         if wifi_handler.connect():
             return EVT_WIFI_CONN_OK
         connect_cnt += 1
+        toggle_dp_value()
         log.debug(f"Connetion attemp {connect_cnt}")
     return EVT_WIFI_CONN_ERR
 
@@ -137,9 +137,18 @@ def __online_state_handler():
     year, month, mday, hour, minute, second, weekday, yearday = sync_handler.get_time()
     if (hour == SYNC_HOUR) and (minute == SYNC_MIN) and (second == SYNC_SEC):
         return EVT_MIDNIGHT
+    # Print date every minute
+    if second == DATE_SECOND:
+        set_value_nixie(mday, month, int(year % 100), scroll=True)
+        for second in range(DATE_SHOW_TIME):
+            toggle_dp_value()
+            time.sleep(1)
+        year, month, mday, hour, minute, second, weekday, yearday = sync_handler.get_time()
+        set_value_nixie(hour, minute, second, scroll=True, toggle_dp=False)
     # Print time
-    set_time_nixie(hour, minute, second)
-    time.sleep(1)
+    else:
+        set_value_nixie(hour, minute, second, toggle_dp=True)
+        time.sleep(1)
     return EVT_NONE
 
 def __recovery_state_handler():

@@ -23,6 +23,12 @@ def __update_display(nix_driver:nixie_driver.NixieDisplay, data_array:list):
 
 # Public methods --------------------------------------------------------------
 
+def set_dp(nix_driver:nixie_driver.NixieDisplay, dp_value=False):
+    nix_driver.set_dp(0, dp_value)
+    nix_driver.set_dp(1, dp_value)
+    nix_driver.update()
+
+
 def set_value(nix_driver:nixie_driver.NixieDisplay, a=0, b=0, c=0):
     
     global __data_value
